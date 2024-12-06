@@ -59,7 +59,7 @@ jobs:
       run: |
         for file in $(ls dist); do
           echo "Contents of $file:"
-          cat "dist/$file"
+          cat "wheelhouse/$file"
           echo "--------------------"
         done
     # - name: Publish distribution 📦 to PyPI
