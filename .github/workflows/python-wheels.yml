@@ -92,7 +92,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && env.enable-build == 'true' }}
         run: |
           pipx run build --sdist . --outdir wheelhouse
-          pip install pybind11-stubgen tomli build
+          pip install pybind11-stubgen tomli build numpy
           pip install -r <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['build-system']['requires']))")
           SKIP_PYI_INSTALL=true python -m build --outdir dist_for_pyi
           pip install $(find dist_for_pyi -type f -name "*.whl")
