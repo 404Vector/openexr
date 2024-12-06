@@ -64,7 +64,7 @@ jobs:
           python-version: '3.x'
 
       - name: Restore Build Cache
-        id: cache
+        id: restored-cache
         if: ${{ inputs.force != 'true' }}
         uses: actions/cache@v4
         with:
@@ -76,24 +76,24 @@ jobs:
         run: |
           if [ "$FORCE" == "true" ]; then
               echo "Force build is enabled. Ignoring cache."
-              echo "cache-hit=false" >> $GITHUB_ENV
-          elif [ -d "dist" ]; then
+              echo "enable-build=true" >> $GITHUB_ENV
+          elif [ "${{ steps.restored-cache.outputs.cache-hit }}" == "true" ]; then
               echo "Cache exists for this commit. Skipping build."
-              echo "cache-hit=true" >> $GITHUB_ENV
+              echo "enable-build=false" >> $GITHUB_ENV
           else
               echo "No cache found. Proceeding with build."
-              echo "cache-hit=false" >> $GITHUB_ENV
+              echo "enable-build=true" >> $GITHUB_ENV
           fi
         env:
           FORCE: ${{ inputs.force }}
         
       - name: Create sdist
         # Only create it once.
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && env.enable-build == 'true' }}
         run: pipx run build --sdist . --outdir wheelhouse
 
       - name: Build wheel
-        if: env.cache-hit == 'false'
+        if: ${{ env.enable-build == 'true' }}
         run: |
           mkdir dist
           echo "this is artifact of python-build-${{ github.sha }}-${{ matrix.os }}" > dist/python-build-${{ github.sha }}-${{ matrix.os }}.txt
@@ -112,7 +112,7 @@ jobs:
       #     OPENEXR_TEST_IMAGE_REPO: "https://raw.githubusercontent.com/AcademySoftwareFoundation/openexr-images/main"
 
       - name: Save Build to Cache
-        if: env.cache-hit == 'false' && ${{ inputs.force != 'true' }}
+        if:  ${{ env.enable-build == 'true' }}
         uses: actions/cache@v4
         with:
           path: dist
