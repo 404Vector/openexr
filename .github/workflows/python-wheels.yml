@@ -92,12 +92,13 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && env.enable-build == 'true' }}
         run: |
           pipx run build --sdist . --outdir wheelhouse
-          pipx install -r <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['build-system']['requires']))")
-          pipx install pybind11-stubgen
+          pip install -r <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['build-system']['requires']))")
+          pip install pybind11-stubgen
           python -m build --outdir dist_for_pyi
           pip install $(find dist_for_pyi -type f -name "*.whl")
           pybind11-stubgen OpenEXR
           pip uninstall OpenEXR
+          mv OpenEXR.pyi ${{ env.CACHE_PATH }}/
 
       - name: Build wheel
         if: ${{ env.enable-build == 'true' }}
