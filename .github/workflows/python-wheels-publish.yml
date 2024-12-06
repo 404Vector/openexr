@@ -19,11 +19,12 @@ permissions:
 
 jobs:
   build:
+    name: Call Python Wheels Workflow
     steps:
-    - name: Build python-wheels
-      uses: ./.github/workflows/python-wheels.yml
-      with:
-        force: ${{ inputs.force || 'false' }}
+      - name: Build python-wheels
+        uses: ./.github/workflows/python-wheels.yml
+        with:
+          force: ${{ inputs.force || 'false' }}
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
