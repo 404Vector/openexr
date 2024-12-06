@@ -20,6 +20,7 @@ permissions:
 jobs:
   build:
     name: Call Python Wheels Workflow
+    runs-on: ubuntu-latest
     steps:
       - name: Build python-wheels
         uses: ./.github/workflows/python-wheels.yml
@@ -40,7 +41,6 @@ jobs:
       id-token: write
 
     steps:
-
     - name: Restore Linux Build Cache
       uses: actions/cache@v4
       with:
