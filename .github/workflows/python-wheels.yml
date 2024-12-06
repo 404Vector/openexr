@@ -117,3 +117,16 @@ jobs:
         with:
           path: dist
           key: python-build-${{ github.sha }}-${{ matrix.os }}
+
+      - name: Restore Build Cache
+        id: cache-restore
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: python-build-${{ github.sha }}-${{ matrix.os }}
+
+      - name: Check the cache
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          echo "Cache not found for key: python-build-${{ github.sha }}-${{ matrix.os }}"
+          exit 1

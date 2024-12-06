@@ -57,6 +57,10 @@ jobs:
     - name: show dir
       shell: bash
       run: |
-        ls -al dist
+        for file in $(ls dist); do
+          echo "Contents of $file:"
+          cat "dist/$file"
+          echo "--------------------"
+        done
     # - name: Publish distribution 📦 to PyPI
     #   uses: pypa/gh-action-pypi-publish@15c56dba361d8335944d31a2ecd17d700fc7bcbc # v1.12.2
