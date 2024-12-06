@@ -96,10 +96,10 @@ jobs:
           pip install -r <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['build-system']['requires']))")
           SKIP_PYI_INSTALL=true python -m build --outdir dist_for_pyi
           pip install $(find dist_for_pyi -type f -name "*.whl")
-          pybind11-stubgen OpenEXR
+          pybind11-stubgen --ignore-invalid --output-dir stubs/ OpenEXR
           pip uninstall -y OpenEXR
           ls -al
-          mv OpenEXR.pyi ${{ env.CACHE_PATH }}/
+          cp stubs/OpenEXR.pyi ${{ env.CACHE_PATH }}/
 
       - name: Build wheel
         if: ${{ env.enable-build == 'true' }}
