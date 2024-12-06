@@ -35,7 +35,12 @@ on:
         description: "Force build and ignore cache"
         required: false
         default: "false"
-
+  workflow_call:
+    inputs:
+      force:
+        description: "Force build and ignore cache"
+        required: false
+        default: "false"
 permissions:
   contents: read
 
@@ -64,8 +69,6 @@ jobs:
         with:
           path: dist
           key: python-build-${{ github.sha }}-${{ matrix.os }}
-          restore-keys: |
-            python-build-
 
       - name: Check if Build Cache Exists
         shell: bash

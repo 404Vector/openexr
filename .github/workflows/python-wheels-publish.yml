@@ -8,61 +8,22 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Force build and ignore cache"
+        required: false
+        default: "false"
   
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Python Wheels - ${{ matrix.os }} 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
-    environment:
-      name: pypi
-      url: https://pypi.org/p/openexr
-
-    permissions:
-      id-token: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Install Python 
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
-        with:
-          python-version: '3.x'
-
-      - name: Create sdist
-        # Only create it once.
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: pipx run build --sdist . --outdir wheelhouse
-
-      - name: Build wheel
-        uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b # v2.21.3
-        with:
-          output-dir: wheelhouse
-        env:
-          CIBW_ARCHS_LINUX: x86_64 
-          CIBW_ARCHS_MACOS: x86_64 arm64 universal2
-          # Build Python 3.7 through 3.12.
-          # Skip python 3.6 since scikit-build-core requires 3.7+
-          # Skip 32-bit wheels builds on Windows
-          # Also skip the PyPy builds, since they fail the unit tests
-          CIBW_BUILD: "cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*"
-          CIBW_SKIP: "*-win32 *_i686"
-          CIBW_TEST_SKIP: "*arm64"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: wheels-${{ matrix.os }}
-          path: |
-            ./wheelhouse/*.whl
-            ./wheelhouse/*.tar.gz
+    - name: Build python-wheels
+      uses: ./.github/workflows/python-wheels.yml
+      with:
+        force: ${{ inputs.force || 'false' }}
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
@@ -78,20 +39,25 @@ jobs:
       id-token: write
 
     steps:
-    - name: Download Linux artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+
+    - name: Restore Linux Build Cache
+      uses: actions/cache@v4
       with:
-        name: wheels-ubuntu-latest
         path: dist
-    - name: Download macOS artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        key: python-build-${{ github.sha }}-ubuntu-latest
+    - name: Restore macOS Build Cache
+      uses: actions/cache@v4
       with:
-        name: wheels-macos-latest
         path: dist
-    - name: Download Windows artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        key: python-build-${{ github.sha }}-macos-latest
+    - name: Restore Windows Build Cache
+      uses: actions/cache@v4
       with:
-        name: wheels-windows-latest
         path: dist
-    - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@15c56dba361d8335944d31a2ecd17d700fc7bcbc # v1.12.2
+        key: python-build-${{ github.sha }}-windows-latest
+    - name: show dir
+      shell: bash
+      run: |
+        ls -al dist
+    # - name: Publish distribution 📦 to PyPI
+    #   uses: pypa/gh-action-pypi-publish@15c56dba361d8335944d31a2ecd17d700fc7bcbc # v1.12.2
