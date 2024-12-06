@@ -57,7 +57,7 @@ jobs:
     - name: show dir
       shell: bash
       run: |
-        for file in $(ls dist); do
+        for file in $(ls wheelhouse); do
           echo "Contents of $file:"
           cat "wheelhouse/$file"
           echo "--------------------"
