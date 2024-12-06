@@ -68,16 +68,18 @@ jobs:
             python-build-
 
       - name: Check if Build Cache Exists
+        shell: bash
         run: |
           if [ "$FORCE" == "true" ]; then
-            echo "Force build is enabled. Ignoring cache."
-            echo "cache-hit=false" >> $GITHUB_ENV
+              echo "Force build is enabled. Ignoring cache."
+              echo "cache-hit=false" >> $GITHUB_ENV
           elif [ -d "dist" ]; then
-            echo "Cache exists for this commit. Skipping build."
-            echo "cache-hit=true" >> $GITHUB_ENV
+              echo "Cache exists for this commit. Skipping build."
+              echo "cache-hit=true" >> $GITHUB_ENV
           else
-            echo "No cache found. Proceeding with build."
-            echo "cache-hit=false" >> $GITHUB_ENV
+              echo "No cache found. Proceeding with build."
+              echo "cache-hit=false" >> $GITHUB_ENV
+          fi
         env:
           FORCE: ${{ inputs.force }}
         
