@@ -96,7 +96,7 @@ jobs:
           pip install -r <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['build-system']['requires']))")
           SKIP_PYI_INSTALL=true python -m build --outdir dist_for_pyi
           pip install $(find dist_for_pyi -type f -name "*.whl")
-          pybind11-stubgen --ignore-invalid --output-dir stubs/ OpenEXR
+          pybind11-stubgen --ignore-all-errors --output-dir stubs/ OpenEXR
           pip uninstall -y OpenEXR
           ls -al
           cp stubs/OpenEXR.pyi ${{ env.CACHE_PATH }}/
