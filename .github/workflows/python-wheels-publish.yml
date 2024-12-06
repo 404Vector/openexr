@@ -42,17 +42,17 @@ jobs:
     - name: Restore Linux Build Cache
       uses: actions/cache@v4
       with:
-        path: dist
+        path: wheelhouse
         key: python-build-${{ github.sha }}-ubuntu-latest
     - name: Restore macOS Build Cache
       uses: actions/cache@v4
       with:
-        path: dist
+        path: wheelhouse
         key: python-build-${{ github.sha }}-macos-latest
     - name: Restore Windows Build Cache
       uses: actions/cache@v4
       with:
-        path: dist
+        path: wheelhouse
         key: python-build-${{ github.sha }}-windows-latest
     - name: show dir
       shell: bash
