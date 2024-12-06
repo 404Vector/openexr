@@ -97,7 +97,7 @@ jobs:
           SKIP_PYI_INSTALL=true python -m build --outdir dist_for_pyi
           pip install $(find dist_for_pyi -type f -name "*.whl")
           pybind11-stubgen OpenEXR
-          pip uninstall OpenEXR
+          pip uninstall -y OpenEXR
           mv OpenEXR.pyi ${{ env.CACHE_PATH }}/
 
       - name: Build wheel
