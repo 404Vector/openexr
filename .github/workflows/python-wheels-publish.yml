@@ -57,10 +57,6 @@ jobs:
     - name: show dir
       shell: bash
       run: |
-        for file in $(ls wheelhouse); do
-          echo "Contents of $file:"
-          cat "wheelhouse/$file"
-          echo "--------------------"
-        done
+        ls wheelhouse
     # - name: Publish distribution 📦 to PyPI
     #   uses: pypa/gh-action-pypi-publish@15c56dba361d8335944d31a2ecd17d700fc7bcbc # v1.12.2
