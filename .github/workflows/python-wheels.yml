@@ -29,6 +29,12 @@ on:
       - 'src/wrappers/python/**'
       - 'pyproject.toml'
       - '.github/workflows/python-wheels.yml'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force build and ignore cache"
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -51,28 +57,57 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Restore Build Cache
+        id: cache
+        if: ${{ inputs.force != 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: python-build-${{ github.sha }}-${{ matrix.os }}
+          restore-keys: |
+            python-build-
+
+      - name: Check if Build Cache Exists
+        run: |
+          if [ "$FORCE" == "true" ]; then
+            echo "Force build is enabled. Ignoring cache."
+            echo "cache-hit=false" >> $GITHUB_ENV
+          elif [ -d "dist" ]; then
+            echo "Cache exists for this commit. Skipping build."
+            echo "cache-hit=true" >> $GITHUB_ENV
+          else
+            echo "No cache found. Proceeding with build."
+            echo "cache-hit=false" >> $GITHUB_ENV
+        env:
+          FORCE: ${{ inputs.force }}
+        
       - name: Create sdist
         # Only create it once.
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pipx run build --sdist . --outdir wheelhouse
 
       - name: Build wheel
-        uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b # v2.21.3
-        env:
-          CIBW_ARCHS_MACOS: x86_64 arm64 universal2
-          # Build Python 3.7 through 3.12.
-          # Skip python 3.6 since scikit-build-core requires 3.7+
-          # Skip 32-bit wheels builds on Windows
-          # Also skip the PyPy builds, since they fail the unit tests
-          CIBW_BUILD: "cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*"
-          CIBW_SKIP: "*-win32 *_i686"
-          CIBW_TEST_SKIP: "*-macosx*arm64"
-          OPENEXR_TEST_IMAGE_REPO: "https://raw.githubusercontent.com/AcademySoftwareFoundation/openexr-images/main"
+        if: env.cache-hit == 'false'
+        run: |
+          mkdir dist
+          echo "this is artifact of python-build-${{ github.sha }}-${{ matrix.os }}" > dist/python-build-${{ github.sha }}-${{ matrix.os }}.txt
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      # - name: Build wheel
+      #   uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b # v2.21.3
+      #   env:
+      #     CIBW_ARCHS_MACOS: x86_64 arm64 universal2
+      #     # Build Python 3.7 through 3.12.
+      #     # Skip python 3.6 since scikit-build-core requires 3.7+
+      #     # Skip 32-bit wheels builds on Windows
+      #     # Also skip the PyPy builds, since they fail the unit tests
+      #     CIBW_BUILD: "cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*"
+      #     CIBW_SKIP: "*-win32 *_i686"
+      #     CIBW_TEST_SKIP: "*-macosx*arm64"
+      #     OPENEXR_TEST_IMAGE_REPO: "https://raw.githubusercontent.com/AcademySoftwareFoundation/openexr-images/main"
+
+      - name: Save Build to Cache
+        if: env.cache-hit == 'false' && ${{ inputs.force != 'true' }}
+        uses: actions/cache@v4
         with:
-          name: wheels-${{ matrix.os }}
-          path: |
-            ./wheelhouse/*.whl
-            ./wheelhouse/*.tar.gz
+          path: dist
+          key: python-build-${{ github.sha }}-${{ matrix.os }}
