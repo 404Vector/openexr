@@ -95,7 +95,7 @@ jobs:
       - name: Build wheel
         if: ${{ env.enable-build == 'true' }}
         run: |
-          mkdir ${{ env.CACHE_PATH }}
+          mkdir -p ${{ env.CACHE_PATH }}
           echo "this is artifact of ${{ env.CACHE_PATH }}" > ${{ env.CACHE_PATH }}/${{ env.CACHE_KEY }}.txt
 
       # - name: Build wheel
