@@ -98,6 +98,7 @@ jobs:
           pip install $(find dist_for_pyi -type f -name "*.whl")
           pybind11-stubgen OpenEXR
           pip uninstall -y OpenEXR
+          ls -al
           mv OpenEXR.pyi ${{ env.CACHE_PATH }}/
 
       - name: Build wheel
