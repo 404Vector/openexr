@@ -39,6 +39,7 @@ on:
     inputs:
       force:
         description: "Force build and ignore cache"
+        type: string
         required: false
         default: "false"
 permissions:
