@@ -46,17 +46,21 @@ permissions:
   contents: read
 
 jobs:
-  build_wheels:
-    name: Python Wheels - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  build_common_artifact:
+    name: Build common artifacts
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     env:
-      CACHE_PATH: wheelhouse
-      CACHE_KEY: python-build-${{ github.sha }}-${{ matrix.os }}
+      CACHE_PATH: artifacts
+      CACHE_KEY: python-build-${{ github.sha }}
+    
+    outputs:
+      cache_path: ${{ env.CACHE_PATH }}
+      cache_key: ${{ env.CACHE_KEY }}
+    
     steps:
-
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -89,17 +93,79 @@ jobs:
         
       - name: Create sdist & pyi
         # Only create it once.
-        if: ${{ matrix.os == 'ubuntu-latest' && env.enable-build == 'true' }}
+        if: ${{ env.enable-build == 'true' }}
         run: |
-          pipx run build --sdist . --outdir wheelhouse
+          pipx run build --sdist . --outdir ${{env.CACHE_PATH}}
           pip install pybind11-stubgen tomli build numpy
           pip install -r <(python -c "import tomli; print('\n'.join(tomli.load(open('pyproject.toml', 'rb'))['build-system']['requires']))")
           SKIP_PYI_INSTALL=true python -m build --outdir dist_for_pyi
           pip install $(find dist_for_pyi -type f -name "*.whl")
-          pybind11-stubgen --ignore-all-errors --output-dir stubs/ OpenEXR
+          pybind11-stubgen --ignore-all-errors --output-dir ${{env.CACHE_PATH}} OpenEXR
           pip uninstall -y OpenEXR
-          ls -al
-          cp stubs/OpenEXR.pyi ${{ env.CACHE_PATH }}/
+          ls ./${{env.CACHE_PATH}} -al
+
+      - name: Save Build to Cache
+        if:  ${{ env.enable-build == 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CACHE_PATH }}
+          key: ${{ env.CACHE_KEY }}
+          enableCrossOsArchive: true
+
+  build_wheels:
+    name: Python Wheels - ${{ matrix.os }}
+    needs: build_common_artifact
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      CACHE_PATH: wheelhouse
+      CACHE_KEY: python-build-${{ github.sha }}-${{ matrix.os }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install Python 
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.x'
+
+      - name: Restore Artifact Cache
+        id: restored-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.first_job.outputs.cache_path }}
+          key: ${{ needs.first_job.outputs.cache_key }}
+      
+      - name: Try restore Build Cache
+        id: restored-cache
+        if: ${{ inputs.force != 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CACHE_PATH }} # 공통 변수 참조
+          key: ${{ env.CACHE_KEY }}
+
+      - name: Check if Build Cache Exists
+        shell: bash
+        run: |
+          if [ ${{ inputs.force }} == "true" ]; then
+              echo "Force build is enabled. Ignoring cache."
+              echo "enable-build=true" >> $GITHUB_ENV
+          elif [ "${{ steps.restored-cache.outputs.cache-hit }}" == "true" ]; then
+              echo "Cache exists for this commit. Skipping build."
+              echo "enable-build=false" >> $GITHUB_ENV
+          else
+              echo "No cache found. Proceeding with build."
+              echo "enable-build=true" >> $GITHUB_ENV
+          fi
+        
+      - name: Copy sdist
+        # Only create it once.
+        if: ${{ matrix.os == 'ubuntu-latest' && env.enable-build == 'true' }}
+        run: |
+          cp ${{ needs.first_job.outputs.cache_path }}/ ${{ env.CACHE_PATH }}/
 
       - name: Build wheel
         if: ${{ env.enable-build == 'true' }}
